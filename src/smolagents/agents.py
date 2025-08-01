@@ -1773,5 +1773,19 @@ class CodeAgent(MultiStepAgent):
         """Set up tool references after initialization."""
         # Pass agent instance reference to the tools that need it
         # This allows tools to access agent state and store results
-        for _, tool_instance in self.tools.items():
+        for name, tool_instance in self.tools.items():
             tool_instance.agent_instance = self
+            original_call = tool_instance.__call__
+            def wrapped_call(*args, **kwargs):
+                result = original_call(*args, **kwargs)
+
+                # Write to agent_instance (customize this as needed)
+                if hasattr(tool_instance, "agent_instance"):
+                    tool_instance.agent_instance.tool_results = getattr(
+                        tool_instance.agent_instance, "tool_results", {}
+                    )
+                    tool_instance.agent_instance.tool_results[name] = result
+
+                return result
+            
+            tool_instance.__call__ = wrapped_call
