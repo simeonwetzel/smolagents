@@ -1475,7 +1475,7 @@ class CodeAgent(MultiStepAgent):
         max_print_outputs_length (`int`, *optional*): Maximum length of the print outputs.
         stream_outputs (`bool`, *optional*, default `False`): Whether to stream outputs during execution.
         use_structured_outputs_internally (`bool`, default `False`): Whether to use structured generation at each action step: improves performance for many models.
-
+        inject_agent_instance_to_tools: This is useful if tools return structured outputs. 
             <Added version="1.17.0"/>
         grammar (`dict[str, str]`, *optional*): Grammar used to parse the LLM output.
             <Deprecated version="1.17.0">
@@ -1497,6 +1497,7 @@ class CodeAgent(MultiStepAgent):
         max_print_outputs_length: int | None = None,
         stream_outputs: bool = False,
         use_structured_outputs_internally: bool = False,
+        inject_agent_instance_to_tools: bool = False,
         grammar: dict[str, str] | None = None,
         code_block_tags: str | tuple[str, str] | None = None,
         **kwargs,
@@ -1549,6 +1550,9 @@ class CodeAgent(MultiStepAgent):
         self.executor_type = executor_type
         self.executor_kwargs: dict[str, Any] = executor_kwargs or {}
         self.python_executor = self.create_python_executor()
+        
+        if inject_agent_instance_to_tools:
+            self.inject_agent_instance_to_tools()
 
     def __enter__(self):
         return self
@@ -1764,3 +1768,11 @@ class CodeAgent(MultiStepAgent):
         code_agent_kwargs.update(kwargs)
         # Call the parent class's from_dict method
         return super().from_dict(agent_dict, **code_agent_kwargs)
+
+    def inject_agent_instance_to_tools(self):
+        """Set up tool references after initialization."""
+        # Pass agent instance reference to the tools that need it
+        # This allows tools to access agent state and store results
+        for _, tool_instance in self.tools.items():
+            if hasattr(tool_instance, "agent_instance"):
+                tool_instance.agent_instance = self
