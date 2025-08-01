@@ -1774,5 +1774,4 @@ class CodeAgent(MultiStepAgent):
         # Pass agent instance reference to the tools that need it
         # This allows tools to access agent state and store results
         for _, tool_instance in self.tools.items():
-            if hasattr(tool_instance, "agent_instance"):
-                tool_instance.agent_instance = self
+            tool_instance.agent_instance = self
